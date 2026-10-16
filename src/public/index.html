@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Task Manager REST API - Interactive documentation, test playground, and full CRUD client with JWT authentication.">
+  <title>TaskFlow REST API — Interactive Playground & Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-badge">⚡</div>
+        <div>
+          <h1>TaskFlow REST API</h1>
+          <p class="subtitle">Secure CRUD API with JWT Auth, SQLite Persistence & Input Validation</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div id="auth-status-chip" class="status-chip unauthenticated">
+          <span class="status-dot"></span>
+          <span id="auth-status-text">Not Authenticated</span>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary btn-sm" style="display: none;">Log Out</button>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="dashboard-grid">
+      <!-- Left Column: Auth & Quick Actions -->
+      <aside class="sidebar">
+        <!-- Auth Card -->
+        <div class="card auth-card">
+          <div class="card-header">
+            <h2>Authentication</h2>
+            <div class="auth-tabs">
+              <button id="tab-login" class="tab-btn active" data-tab="login">Login</button>
+              <button id="tab-register" class="tab-btn" data-tab="register">Register</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Login Form -->
+            <form id="form-login" class="auth-form">
+              <div class="form-group">
+                <label for="login-identifier">Email or Username</label>
+                <input type="text" id="login-identifier" class="form-control" placeholder="alex@example.com" value="alex@example.com" required>
+              </div>
+              <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" class="form-control" placeholder="••••••••" value="password123" required>
+              </div>
+              <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block">Sign In & Generate Token</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" class="auth-form" style="display: none;">
+              <div class="form-group">
+                <label for="reg-username">Username</label>
+                <input type="text" id="reg-username" class="form-control" placeholder="alex_dev" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-email">Email</label>
+                <input type="email" id="reg-email" class="form-control" placeholder="alex@example.com" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-password">Password (min 6 chars)</label>
+                <input type="password" id="reg-password" class="form-control" placeholder="••••••••" required>
+              </div>
+              <button type="submit" id="btn-submit-register" class="btn btn-primary btn-block">Create Account</button>
+            </form>
+
+            <!-- Active Token Display -->
+            <div class="token-container">
+              <div class="token-header">
+                <span class="token-title">Active Bearer Token</span>
+                <button id="btn-copy-token" class="btn-icon" title="Copy token" disabled>📋</button>
+              </div>
+              <div id="token-display" class="token-display empty">No token active. Log in to authenticate requests.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Stats Widget -->
+        <div class="card stats-card">
+          <div class="card-header">
+            <h2>Live Task Summary</h2>
+            <button id="btn-refresh-stats" class="btn-icon" title="Refresh stats">🔄</button>
+          </div>
+          <div class="card-body">
+            <div class="stats-grid">
+              <div class="stat-box">
+                <div class="stat-number" id="stat-total">0</div>
+                <div class="stat-label">Total Tasks</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-number text-success" id="stat-completed">0</div>
+                <div class="stat-label">Completed</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-number text-warning" id="stat-progress">0</div>
+                <div class="stat-label">In Progress</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-number text-info" id="stat-pending">0</div>
+                <div class="stat-label">Pending</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Specs / Documentation Links -->
+        <div class="card quick-info-card">
+          <div class="card-header">
+            <h2>REST Standards</h2>
+          </div>
+          <div class="card-body">
+            <ul class="specs-list">
+              <li><span class="badge badge-success">200 / 201</span> Success / Created</li>
+              <li><span class="badge badge-warning">400</span> Validation error</li>
+              <li><span class="badge badge-danger">401</span> Unauthorized (No token)</li>
+              <li><span class="badge badge-neutral">404</span> Not Found / Scoped</li>
+              <li><span class="badge badge-danger">409</span> Conflict (Duplicate)</li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Column: Interactive API Endpoint Explorer & Test Runner -->
+      <section class="main-content">
+        <!-- Interactive Tester Card -->
+        <div class="card interactive-tester">
+          <div class="card-header">
+            <div>
+              <h2>Interactive API Console</h2>
+              <p class="section-desc">Select an endpoint, review the payload, and send live requests.</p>
+            </div>
+            <div class="endpoint-picker">
+              <label for="endpoint-select">Select Endpoint:</label>
+              <select id="endpoint-select" class="form-control select-control">
+                <optgroup label="Authentication (Public & Protected)">
+                  <option value="auth-register">POST /api/auth/register</option>
+                  <option value="auth-login">POST /api/auth/login</option>
+                  <option value="auth-me">GET /api/auth/me (Protected)</option>
+                </optgroup>
+                <optgroup label="Tasks CRUD (Protected)">
+                  <option value="tasks-list" selected>GET /api/tasks</option>
+                  <option value="tasks-create">POST /api/tasks</option>
+                  <option value="tasks-get">GET /api/tasks/:id</option>
+                  <option value="tasks-update">PUT /api/tasks/:id</option>
+                  <option value="tasks-patch">PATCH /api/tasks/:id</option>
+                  <option value="tasks-delete">DELETE /api/tasks/:id</option>
+                  <option value="tasks-stats">GET /api/tasks/stats/summary</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Request URL Bar -->
+            <div class="request-bar">
+              <span id="current-method" class="method-tag method-get">GET</span>
+              <input type="text" id="request-url-input" class="form-control mono-font" value="/api/tasks">
+              <button id="btn-send-request" class="btn btn-primary">Send Request 🚀</button>
+            </div>
+
+            <!-- Parameters & Body Editor Tabs -->
+            <div class="request-details-tabs">
+              <div class="detail-tab-buttons">
+                <button class="param-tab active" data-pane="pane-body">Request Body (JSON)</button>
+                <button class="param-tab" data-pane="pane-params">Query / URL Params</button>
+                <button class="param-tab" data-pane="pane-headers">Headers</button>
+              </div>
+
+              <!-- Body Pane -->
+              <div id="pane-body" class="param-pane active">
+                <textarea id="request-body-input" class="form-control mono-font body-textarea" rows="6" placeholder="No request body needed for GET requests."></textarea>
+                <div class="body-presets">
+                  <span>Presets:</span>
+                  <button type="button" class="btn-chip" id="preset-valid-task">Valid Task</button>
+                  <button type="button" class="btn-chip" id="preset-invalid-task">Invalid Task (Test 400)</button>
+                  <button type="button" class="btn-chip" id="preset-sample-user">New User</button>
+                </div>
+              </div>
+
+              <!-- Params Pane -->
+              <div id="pane-params" class="param-pane">
+                <div class="params-grid">
+                  <div class="form-group">
+                    <label for="param-id">Resource :id (if applicable)</label>
+                    <input type="text" id="param-id" class="form-control" placeholder="e.g. 1">
+                  </div>
+                  <div class="form-group">
+                    <label for="param-status">Filter ?status=</label>
+                    <select id="param-status" class="form-control">
+                      <option value="">(All Statuses)</option>
+                      <option value="pending">pending</option>
+                      <option value="in_progress">in_progress</option>
+                      <option value="completed">completed</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="param-priority">Filter ?priority=</label>
+                    <select id="param-priority" class="form-control">
+                      <option value="">(All Priorities)</option>
+                      <option value="low">low</option>
+                      <option value="medium">medium</option>
+                      <option value="high">high</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="param-search">Search ?search=</label>
+                    <input type="text" id="param-search" class="form-control" placeholder="Search title or description...">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Headers Pane -->
+              <div id="pane-headers" class="param-pane">
+                <div class="headers-list">
+                  <div class="header-row">
+                    <span class="header-key">Content-Type:</span>
+                    <span class="header-val">application/json</span>
+                  </div>
+                  <div class="header-row">
+                    <span class="header-key">Authorization:</span>
+                    <span class="header-val" id="header-auth-val">None (Send unauthenticated to test 401)</span>
+                  </div>
+                  <div class="header-options">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="chk-include-auth" checked>
+                      Include Bearer Token in Request
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Response Panel -->
+            <div class="response-panel">
+              <div class="response-header">
+                <div class="response-meta">
+                  <span class="meta-label">Response:</span>
+                  <span id="response-status-badge" class="badge badge-neutral">Ready</span>
+                  <span id="response-time" class="meta-time">— ms</span>
+                </div>
+                <div class="response-actions">
+                  <button id="btn-copy-curl" class="btn btn-secondary btn-sm">Copy cURL</button>
+                  <button id="btn-copy-response" class="btn btn-secondary btn-sm">Copy JSON</button>
+                </div>
+              </div>
+              <pre id="response-output" class="mono-font json-viewer">// Click "Send Request" or select an endpoint above to test.</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task List Management Board -->
+        <div class="card tasks-list-card">
+          <div class="card-header">
+            <div>
+              <h2>User Task Board</h2>
+              <p class="section-desc">Live representation of tasks currently in SQLite for the authenticated user.</p>
+            </div>
+            <div class="board-actions">
+              <button id="btn-quick-create-modal" class="btn btn-primary btn-sm">+ New Task</button>
+              <button id="btn-refresh-task-list" class="btn btn-secondary btn-sm">Refresh List</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="tasks-table-container" class="tasks-table-container">
+              <div class="empty-state" id="tasks-empty-state">
+                <p>No tasks loaded. Authenticate and click <strong>Refresh List</strong> or <strong>+ New Task</strong>.</p>
+              </div>
+              <div id="tasks-grid" class="tasks-cards-grid" style="display: none;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Quick Create Modal -->
+    <div id="create-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Create New Task</h3>
+          <button id="btn-close-modal" class="btn-icon">✕</button>
+        </div>
+        <form id="form-quick-create">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="modal-title">Task Title *</label>
+              <input type="text" id="modal-title" class="form-control" placeholder="e.g. Build REST API endpoints" required>
+            </div>
+            <div class="form-group">
+              <label for="modal-desc">Description</label>
+              <textarea id="modal-desc" class="form-control" rows="3" placeholder="Optional notes, requirements or context..."></textarea>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="modal-status">Status</label>
+                <select id="modal-status" class="form-control">
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="modal-priority">Priority</label>
+                <select id="modal-priority" class="form-control">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="modal-due">Due Date</label>
+              <input type="date" id="modal-due" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="btn-cancel-modal" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Task</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
